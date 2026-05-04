@@ -5,6 +5,8 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import javax.inject.Inject
 
+// Reproducer for missing "Import assign operator" quick fix in .kt files.
+// See README.md for the steps.
 abstract class MyJavaExecTask @Inject constructor(
     private val execOperations: ExecOperations,
 ) : DefaultTask() {
@@ -15,11 +17,13 @@ abstract class MyJavaExecTask @Inject constructor(
     @TaskAction
     fun run() {
         execOperations.javaexec {
-            // `executable` is a Property<String> on JavaExecSpec.
-            // Without `import org.gradle.kotlin.dsl.assign`, this line fails
-            // to compile and the IDE should — but does not — offer the
-            // "Import assign operator" quick fix.
-            executable = "/usr/bin/java"
+            // Change the line below to:
+            //
+            //     mainClass = "does.not.Matter"
+            //
+            // The IDE flags it as `Unresolved reference 'assign'`,
+            // but does not offer the `Import assign operator` quick fix
+            // (which would add `import org.gradle.kotlin.dsl.assign`).
             mainClass.set("does.not.Matter")
         }
     }

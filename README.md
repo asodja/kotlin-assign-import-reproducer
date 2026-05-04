@@ -15,43 +15,58 @@ Gradle `build-logic` included build.
     ├── settings.gradle.kts
     └── src/main/kotlin/
         ├── my-conventions.gradle.kts
-        └── MyJavaExecTask.kt        # <-- the file to open in the IDE
+        └── MyJavaExecTask.kt        # <-- the file to edit
 ```
 
 ## Steps to reproduce
 
-1. Open this directory in IntelliJ IDEA and wait for Gradle sync to finish.
+1. Import this directory in IntelliJ IDEA and wait for Gradle sync to finish.
 2. Open `build-logic/src/main/kotlin/MyJavaExecTask.kt`.
-3. Place the cursor on `executable = "/usr/bin/java"` (currently flagged
-   as `Unresolved reference 'assign'`).
-4. Press `Alt+Enter` to open the quick fix list.
+3. Change the line
+
+   ```kotlin
+   mainClass.set("does.not.Matter")
+   ```
+
+   to
+
+   ```kotlin
+   mainClass = "does.not.Matter"
+   ```
+
+4. The IDE flags the line as `Unresolved reference 'assign'`.
+5. Place the cursor on `mainClass` (the property name) and press `Alt+Enter`.
+6. Place the cursor on `=` and press `Alt+Enter`.
 
 ### Expected
 
-`Import assign operator` is offered, which would add:
+`Import assign operator` is offered as a quick fix in **both** cursor
+positions, adding:
 
 ```kotlin
 import org.gradle.kotlin.dsl.assign
 ```
 
+Discoverability matters: a quick fix offered only on the `=` sign is
+easy to miss because the cursor is rarely parked there. Operator-only
+quick fixes are a long-standing usability issue. Offering the same fix
+on the property name (`mainClass`) — where the cursor naturally lands —
+makes it discoverable.
+
 ### Actual
 
-The quick fix list shows only unrelated suggestions, e.g.:
+The quick fix is missing in both positions. Only unrelated suggestions
+appear, e.g.:
 
 - `Add explicit 'this'`
 - `Converts the assignment statement to an expression`
 - `Add full qualifier`
 - `Enable the option 'Implicit receivers...'`
 
-The same `=` assignment in a `.gradle.kts` script does offer the import
-quick fix, so the issue is specific to plain `.kt` files compiled by
-`kotlin-dsl`.
-
 ## Notes
 
-`./gradlew help` succeeds without any changes — the `kotlin-dsl` plugin
-auto-applies the Kotlin assignment compiler plugin, which rewrites `=`
-on `Property<T>` at compile time. The bug is in the IDE only: it flags
-the line as `Unresolved reference 'assign'` and fails to offer the
-correct quick fix. Adding `import org.gradle.kotlin.dsl.assign`
-manually silences the error in the IDE.
+`./gradlew help` succeeds either way — the `kotlin-dsl` plugin
+auto-applies the Kotlin assignment compiler plugin, which rewrites
+`=` on `Property<T>` at compile time. The bug is in the IDE only.
+Adding `import org.gradle.kotlin.dsl.assign` manually silences the
+red highlighting in the IDE.
